@@ -3,6 +3,7 @@ package datadogwriter
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -19,9 +20,7 @@ type DatadogWriter struct {
 	Hostname string
 	Tags     string
 	Source   string
-	Site     string
 	Encoding string
-	ApiKey   string
 }
 
 func (w *DatadogWriter) Write(p []byte) (n int, err error) {
@@ -41,27 +40,31 @@ func (w *DatadogWriter) Write(p []byte) (n int, err error) {
 	// Send log to Datadog
 	ctx := datadog.NewDefaultContext(context.Background())
 	configuration := datadog.NewConfiguration()
-	// apiKey := os.Getenv("DD_API_KEY")
-	if w.ApiKey == "" {
+	apiKey := os.Getenv("DD_API_KEY")
+	if apiKey == "" {
 		return 0, fmt.Errorf("datadog api key is not set")
 	}
 
-	if w.Site == "" {
-		w.Site = "datadoghq.com" // Default to datadoghq.com
+	site := os.Getenv("DD_SITE")
+
+	if site == "" {
+		site = "datadoghq.com" // Default to datadoghq.com
 	}
+
+	logEndpoint := "https://http-intake.logs." + site
 	configuration.Servers = datadog.ServerConfigurations{
 		{
-			URL: "https://http-intake.logs." + w.Site, // Set the site dynamically
+			URL: logEndpoint, // Set the site dynamically
 		},
 	}
 
-	configuration.AddDefaultHeader("DD-API-KEY", w.ApiKey)
+	configuration.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(configuration)
 	api := datadogV2.NewLogsApi(apiClient)
 
 	_, _, err = api.SubmitLog(ctx, body, *datadogV2.NewSubmitLogOptionalParameters())
 	if err != nil {
-		return 0, fmt.Errorf("failed to send log to Datadog: %w", err)
+		return 0, fmt.Errorf("failed to send log to Datadog endpoint - %s): %w", logEndpoint, err)
 	}
 
 	return len(p), nil

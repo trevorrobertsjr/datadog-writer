@@ -55,7 +55,7 @@ func (w *DatadogWriter) Write(p []byte) (n int, err error) {
 		},
 	}
 
-	configuration.AddDefaultHeader("DD-API-KEY", apiKey)
+	configuration.AddDefaultHeader("DD-API-KEY", w.ApiKey)
 	apiClient := datadog.NewAPIClient(configuration)
 	api := datadogV2.NewLogsApi(apiClient)
 

@@ -3,7 +3,6 @@ package datadogwriter
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -22,6 +21,7 @@ type DatadogWriter struct {
 	Source   string
 	Site     string
 	Encoding string
+	ApiKey   string
 }
 
 func (w *DatadogWriter) Write(p []byte) (n int, err error) {
@@ -41,16 +41,13 @@ func (w *DatadogWriter) Write(p []byte) (n int, err error) {
 	// Send log to Datadog
 	ctx := datadog.NewDefaultContext(context.Background())
 	configuration := datadog.NewConfiguration()
-	apiKey := os.Getenv("DD_API_KEY")
-	if apiKey == "" {
+	// apiKey := os.Getenv("DD_API_KEY")
+	if w.ApiKey == "" {
 		return 0, fmt.Errorf("datadog api key is not set")
 	}
 
 	if w.Site == "" {
-		w.Site = os.Getenv("DD_SITE")
-		if w.Site == "" {
-			w.Site = "datadoghq.com" // Default to datadoghq.com
-		}
+		w.Site = "datadoghq.com" // Default to datadoghq.com
 	}
 	configuration.Servers = datadog.ServerConfigurations{
 		{
